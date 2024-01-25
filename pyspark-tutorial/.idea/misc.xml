@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.9 (takuto_investigation)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (takuto_investigation)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.11.6 Docker Compose (pyspark) (2)" project-jdk-type="Python SDK" />
 </project>
