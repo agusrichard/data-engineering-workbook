@@ -53,3 +53,4 @@
 - PySpark ecosystem:
   ![Spark Ecosystem](https://sparkbyexamples.com/ezoimgfmt/i0.wp.com/sparkbyexamples.com/wp-content/uploads/2020/02/spark-components-1.jpg?w=1018&ssl=1&ezimgfmt=ng:webp/ngcb1)
 
+## PySpark RDD – Resilient Distributed Dataset
