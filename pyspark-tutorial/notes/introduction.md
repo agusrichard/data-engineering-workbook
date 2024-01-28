@@ -54,3 +54,139 @@
   ![Spark Ecosystem](https://sparkbyexamples.com/ezoimgfmt/i0.wp.com/sparkbyexamples.com/wp-content/uploads/2020/02/spark-components-1.jpg?w=1018&ssl=1&ezimgfmt=ng:webp/ngcb1)
 
 ## PySpark RDD – Resilient Distributed Dataset
+- PySpark RDD (Resilient Distributed Dataset) is a fundamental data structure of PySpark that is fault-tolerant, immutable distributed collections of objects, which means once you create an RDD you cannot change it.
+- Each dataset in RDD is divided into logical partitions, which can be computed on different nodes of the cluster.
+
+### RDD Creation 
+- In order to create an RDD, first, you need to create a SparkSession which is an entry point to the PySpark application
+- parkSession can be created using a builder() or newSession() methods of the SparkSession.
+- Spark session internally creates a sparkContext variable of SparkContext. You can create multiple SparkSession objects but only one SparkContext per JVM.
+- In case you want to create another new SparkContext you should stop the existing Sparkcontext (using stop()) before creating a new one.
+- Snippet:
+  ```python
+  # Import SparkSession
+  from pyspark.sql import SparkSession
+
+  # Create SparkSession 
+  spark = SparkSession.builder \
+        .master("local[1]") \
+        .appName("SparkByExamples.com") \
+        .getOrCreate() 
+  ```
+  
+### using parallelize()
+- SparkContext has several functions to use with RDDs. For example, it’s parallelize() method is used to create an RDD from a list.
+  ```python
+  # Create RDD from parallelize    
+  dataList = [("Java", 20000), ("Python", 100000), ("Scala", 3000)]
+  rdd=spark.sparkContext.parallelize(dataList)
+  ```
+  
+### using textFile()
+- RDD can also be created from a text file using textFile() function of the SparkContext.
+  ```python
+  # Create RDD from external Data source
+  rdd2 = spark.sparkContext.textFile("/path/test.txt")
+  ```
+- Once you have an RDD, you can perform transformation and action operations. Any operation you perform on RDD runs in parallel.  
+  
+### RDD Operations
+- RDD transformations – Transformations are lazy operations. When you run a transformation(for example update), instead of updating a current RDD, these operations return another RDD.
+- RDD actions – operations that trigger computation and return RDD values to the driver.
+
+### RDD Transformations
+- Transformations on Spark RDD return another RDD and transformations are lazy meaning they don’t execute until you call an action on RDD.
+- Some transformations on RDDs are flatMap(), map(), reduceByKey(), filter(), sortByKey() and return a new RDD instead of updating the current.
+
+### RDD Actions
+- RDD Action operation returns the values from an RDD to a driver node. In other words, any RDD function that returns non RDD[T] is considered as an action. 
+- Some actions on RDDs are count(), collect(), first(), max(), reduce() and more.
+
+## PySpark DataFrame Tutorial for Beginners
+- DataFrame is a distributed collection of data organized into named columns. It is conceptually equivalent to a table in a relational database or a data frame in R/Python, but with richer optimizations under the hood. DataFrames can be constructed from a wide array of sources such as structured data files, tables in Hive, external databases, or existing RDDs. – Databricks
+- PySpark DataFrame is mostly similar to Pandas DataFrame with the exception that PySpark DataFrames are distributed in the cluster (meaning the data in data frames are stored in different machines in a cluster) and any operations in PySpark executes in parallel on all machines whereas Panda Dataframe stores and operates on a single machine.
+- Just know that data in PySpark DataFrames are stored in different machines in a cluster.
+
+### Is PySpark faster than pandas?
+- Due to parallel execution on all cores on multiple machines, PySpark runs operations faster than Pandas
+- In other words, Pandas DataFrames run operations on a single node whereas PySpark runs on multiple machines.
+
+### DataFrame creation
+- using createDataFrame()
+  ```python
+  data = [('James','','Smith','1991-04-01','M',3000),
+    ('Michael','Rose','','2000-05-19','M',4000),
+    ('Robert','','Williams','1978-09-05','M',4000),
+    ('Maria','Anne','Jones','1967-12-01','F',4000),
+    ('Jen','Mary','Brown','1980-02-17','F',-1)
+  ]
+
+  columns = ["firstname","middlename","lastname","dob","gender","salary"]
+  df = spark.createDataFrame(data=data, schema = columns)
+  ```
+- Since DataFrame’s are structure format that contains names and columns, we can get the schema of the DataFrame using df.printSchema()
+
+### DataFrame from external data sources
+- Below is an example of how to read a CSV file from a local system.
+  ```python
+  df = spark.read.csv("/tmp/resources/zipcodes.csv")
+  df.printSchema()
+  ```
+  
+## PySpark SQL Tutorial
+- PySpark SQL is one of the most used PySpark modules which is used for processing structured columnar data format. Once you have a DataFrame created, you can interact with the data by using SQL syntax.
+- In other words, Spark SQL brings native RAW SQL queries on Spark meaning you can run traditional ANSI SQL on Spark Dataframe, in the later section of this PySpark SQL tutorial, you will learn in detail how to use SQL select, where, group by, join, union e.t.c
+- In order to use SQL, first, create a temporary table on DataFrame using createOrReplaceTempView() function. Once created, this table can be accessed throughout the SparkSession using sql() and it will be dropped along with your SparkContext termination.
+- Use sql() method of the SparkSession object to run the query and this method returns a new DataFrame.
+  ```python
+  df.createOrReplaceTempView("PERSON_DATA")
+  df2 = spark.sql("SELECT * from PERSON_DATA")
+  df2.printSchema()
+  df2.show()
+  
+  groupDF = spark.sql("SELECT gender, count(*) from PERSON_DATA group by gender")
+  groupDF.show()
+  ```
+- PySpark Streaming Tutorial for Beginners – Streaming is a scalable, high-throughput, fault-tolerant streaming processing system that supports both batch and streaming workloads. It is used to process real-time data from sources like file system folders, TCP sockets, S3, Kafka, Flume, Twitter, and Amazon Kinesis to name a few. The processed data can be pushed to databases, Kafka, live dashboards e.t.c
+
+### Streaming from TCP Socket
+- Use readStream.format("socket") from Spark session object to read data from the socket and provide options host and port where you want to stream data from.
+  ```python
+  df = spark.readStream
+        .format("socket")
+        .option("host","localhost")
+        .option("port","9090")
+        .load()
+  ```
+- After processing, you can stream the data frame to the console. In real-time, we ideally stream it to either Kafka, database e.t.c
+  ```python
+  query = count.writeStream
+        .format("console")
+        .outputMode("complete")
+        .start()
+        .awaitTermination()
+  ```
+  
+### Streaming from Kafka
+- Using Spark Streaming we can read from Kafka topic and write to Kafka topic in TEXT, CSV, AVRO and JSON formats
+  ![](https://sparkbyexamples.com/ezoimgfmt/i0.wp.com/sparkbyexamples.com/wp-content/uploads/2019/03/spark-structured-streaming-kafka.png?w=1404&ssl=1&ezimgfmt=ng:webp/ngcb1)
+- Snippet:
+  ```python
+  df = spark.readStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", "192.168.1.100:9092")
+          .option("subscribe", "json_topic")
+          .option("startingOffsets", "earliest") // From starting
+          .load()
+  ```
+- Below Pyspark example, Write a message to another topic in Kafka using writeStream()
+  ```python
+  df.selectExpr("CAST(id AS STRING) AS key", "to_json(struct(*)) AS value")
+     .writeStream
+     .format("kafka")
+     .outputMode("append")
+     .option("kafka.bootstrap.servers", "192.168.1.100:9092")
+     .option("topic", "josn_data_topic")
+     .start()
+     .awaitTermination()
+  ```
