@@ -194,3 +194,649 @@
   pandasDF2 = df.toPandas()
   print(pandasDF2)
   ```
+  
+## PySpark show() – Display DataFrame Contents in Table
+
+### Quick Example of show()
+- PySpark DataFrame show() is used to display the contents of the DataFrame in a Table Row and Column Format. By default, it shows only 20 Rows, and the column values are truncated at 20 characters.
+  ```python
+  # Default - displays 20 rows and 
+  # 20 charactes from column value 
+  df.show()
+
+  #Display full column contents
+  df.show(truncate=False)
+
+  # Display 2 rows and full column contents
+  df.show(2,truncate=False) 
+
+  # Display 2 rows & column values 25 characters
+  df.show(2,truncate=25) 
+
+  # Display DataFrame rows & columns vertically
+  df.show(n=3,truncate=25,vertical=True)
+  ```
+  
+### PySpark show() To Display Contents
+- Snippet:
+  ```python
+  from pyspark.sql import SparkSession
+  spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+  columns = ["Seqno","Quote"]
+  data = [("1", "Be the change that you wish to see in the world"),
+      ("2", "Everyone thinks of changing the world, but no one thinks of changing himself."),
+      ("3", "The purpose of our lives is to be happy."),
+      ("4", "Be cool.")]
+  df = spark.createDataFrame(data,columns)
+  df.show()
+
+  # Output
+  #+-----+--------------------+
+  #|Seqno|               Quote|
+  #+-----+--------------------+
+  #|    1|Be the change tha...|
+  #|    2|Everyone thinks o...|
+  #|    3|The purpose of ou...|
+  #|    4|            Be cool.|
+  #+-----+--------------------+
+  ```
+- Snippet:
+  ```python
+  #Display full column contents
+  df.show(truncate=False)
+
+  #+-----+-----------------------------------------------------------------------------+
+  #|Seqno|Quote                                                                        |
+  #+-----+-----------------------------------------------------------------------------+
+  #|1    |Be the change that you wish to see in the world                              |
+  #|2    |Everyone thinks of changing the world, but no one thinks of changing himself.|
+  #|3    |The purpose of our lives is to be happy.                                     |
+  #|4    |Be cool.                                                                     |
+  #+-----+-----------------------------------------------------------------------------+
+  
+  # Display 2 rows and full column contents
+  df.show(2,truncate=False) 
+
+  #+-----+-----------------------------------------------------------------------------+
+  #|Seqno|Quote                                                                        |
+  #+-----+-----------------------------------------------------------------------------+
+  #|1    |Be the change that you wish to see in the world                              |
+  #|2    |Everyone thinks of changing the world, but no one thinks of changing himself.|
+  #+-----+-----------------------------------------------------------------------------+
+  ```
+
+### Display contents vertically
+- Snippet:
+  ```python
+  # Display DataFrame rows & columns vertically
+  df.show(n=3,truncate=25,vertical=True)
+
+  #-RECORD 0--------------------------
+  # Seqno | 1                         
+  # Quote | Be the change that you... 
+  #-RECORD 1--------------------------
+  # Seqno | 2                         
+  # Quote | Everyone thinks of cha... 
+  #-RECORD 2--------------------------
+  # Seqno | 3                         
+  # Quote | The purpose of our liv... 
+  ```
+  
+## PySpark StructType & StructField Explained with Examples
+
+### Intro
+- Key points:
+  - Defining DataFrame Schemas: StructType is commonly used to define the schema when creating a DataFrame, particularly for structured data with fields of different data types.
+  - Nested Structures: You can create complex schemas with nested structures by nesting StructType within other StructType objects, allowing you to represent hierarchical or multi-level data.
+  - Enforcing Data Structure: When reading data from various sources, specifying a StructType as the schema ensures that the data is correctly interpreted and structured. This is important when dealing with semi-structured or schema-less data sources.
+
+### StructType – Defines the structure of the DataFrame
+- StructType is a collection or list of StructField objects.
+
+### Using PySpark StructType & StructField with DataFrame
+- Snippet:
+  ```python
+  # Imports
+  import pyspark
+  from pyspark.sql import SparkSession
+  from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+
+  spark = SparkSession.builder.master("local[1]") \
+                      .appName('SparkByExamples.com') \
+                      .getOrCreate()
+
+  data = [("James","","Smith","36636","M",3000),
+      ("Michael","Rose","","40288","M",4000),
+      ("Robert","","Williams","42114","M",4000),
+      ("Maria","Anne","Jones","39192","F",4000),
+      ("Jen","Mary","Brown","","F",-1)
+    ]
+
+  schema = StructType([ \
+      StructField("firstname",StringType(),True), \
+      StructField("middlename",StringType(),True), \
+      StructField("lastname",StringType(),True), \
+      StructField("id", StringType(), True), \
+      StructField("gender", StringType(), True), \
+      StructField("salary", IntegerType(), True) \
+    ])
+   
+  df = spark.createDataFrame(data=data,schema=schema)
+  df.printSchema()
+  df.show(truncate=False)
+  
+  # Output
+  root
+   |-- firstname: string (nullable = true)
+   |-- middlename: string (nullable = true)
+   |-- lastname: string (nullable = true)
+   |-- id: string (nullable = true)
+   |-- gender: string (nullable = true)
+   |-- salary: integer (nullable = true)
+
+  +---------+----------+--------+-----+------+------+
+  |firstname|middlename|lastname|id   |gender|salary|
+  +---------+----------+--------+-----+------+------+
+  |James    |          |Smith   |36636|M     |3000  |
+  |Michael  |Rose      |        |40288|M     |4000  |
+  |Robert   |          |Williams|42114|M     |4000  |
+  |Maria    |Anne      |Jones   |39192|F     |4000  |
+  |Jen      |Mary      |Brown   |     |F     |-1    |
+  +---------+----------+--------+-----+------+------+
+  ```
+  
+### Defining Nested StructType object struct
+- Snippet:
+  ```python
+  # Defining schema using nested StructType
+  structureData = [
+      (("James","","Smith"),"36636","M",3100),
+      (("Michael","Rose",""),"40288","M",4300),
+      (("Robert","","Williams"),"42114","M",1400),
+      (("Maria","Anne","Jones"),"39192","F",5500),
+      (("Jen","Mary","Brown"),"","F",-1)
+    ]
+  structureSchema = StructType([
+          StructField('name', StructType([
+               StructField('firstname', StringType(), True),
+               StructField('middlename', StringType(), True),
+               StructField('lastname', StringType(), True)
+               ])),
+           StructField('id', StringType(), True),
+           StructField('gender', StringType(), True),
+           StructField('salary', IntegerType(), True)
+           ])
+
+  df2 = spark.createDataFrame(data=structureData,schema=structureSchema)
+  df2.printSchema()
+  df2.show(truncate=False)
+
+  # Output
+  root
+   |-- name: struct (nullable = true)
+   |    |-- firstname: string (nullable = true)
+   |    |-- middlename: string (nullable = true)
+   |    |-- lastname: string (nullable = true)
+   |-- id: string (nullable = true)
+   |-- gender: string (nullable = true)
+   |-- salary: integer (nullable = true)
+
+  +--------------------+-----+------+------+
+  |name                |id   |gender|salary|
+  +--------------------+-----+------+------+
+  |[James, , Smith]    |36636|M     |3100  |
+  |[Michael, Rose, ]   |40288|M     |4300  |
+  |[Robert, , Williams]|42114|M     |1400  |
+  |[Maria, Anne, Jones]|39192|F     |5500  |
+  |[Jen, Mary, Brown]  |     |F     |-1    |
+  +--------------------+-----+------+------+
+  ```
+  
+### Adding & Changing struct of the DataFrame
+- Snippet:
+  ```python
+  # Updating existing structtype using struct
+  from pyspark.sql.functions import col,struct,when
+  updatedDF = df2.withColumn("OtherInfo", 
+      struct(col("id").alias("identifier"),
+      col("gender").alias("gender"),
+      col("salary").alias("salary"),
+      when(col("salary").cast(IntegerType()) < 2000,"Low")
+        .when(col("salary").cast(IntegerType()) < 4000,"Medium")
+        .otherwise("High").alias("Salary_Grade")
+    )).drop("id","gender","salary")
+
+  updatedDF.printSchema()
+  updatedDF.show(truncate=False)
+
+  # Output
+  root
+   |-- name: struct (nullable = true)
+   |    |-- firstname: string (nullable = true)
+   |    |-- middlename: string (nullable = true)
+   |    |-- lastname: string (nullable = true)
+   |-- OtherInfo: struct (nullable = false)
+   |    |-- identifier: string (nullable = true)
+   |    |-- gender: string (nullable = true)
+   |    |-- salary: integer (nullable = true)
+   |    |-- Salary_Grade: string (nullable = false)
+  ```
+  
+### Using SQL ArrayType and MapType
+- Snippet:
+  ```python
+  # Using SQL ArrayType and MapType
+  arrayStructureSchema = StructType([
+      StructField('name', StructType([
+         StructField('firstname', StringType(), True),
+         StructField('middlename', StringType(), True),
+         StructField('lastname', StringType(), True)
+         ])),
+         StructField('hobbies', ArrayType(StringType()), True),
+         StructField('properties', MapType(StringType(),StringType()), True)
+      ])
+
+  # Output
+  root
+   |-- name: struct (nullable = true)
+   |    |-- firstname: string (nullable = true)
+   |    |-- middlename: string (nullable = true)
+   |    |-- lastname: string (nullable = true)
+   |-- hobbies: array (nullable = true)
+   |    |-- element: string (containsNull = true)
+   |-- properties: map (nullable = true)
+   |    |-- key: string
+   |    |-- value: string (valueContainsNull = true)
+  ```
+  
+### Creating StructType object struct from JSON file
+- Snippet:
+  ```python
+  # Using json() to load StructType
+  print(df2.schema.json())
+
+  # Loading json schema to create DataFrame
+  import json
+  schemaFromJson = StructType.fromJson(json.loads(schema.json))
+  df3 = spark.createDataFrame(
+          spark.sparkContext.parallelize(structureData),schemaFromJson)
+  df3.printSchema()
+  ```
+  
+### Creating StructType object from DDL
+- Snippet:
+  ```python
+  # Create StructType from DDL String
+  ddlSchemaStr = "`fullName` STRUCT<`first`: STRING, `last`: STRING,
+   `middle`: STRING>,`age` INT,`gender` STRING"
+  ddlSchema = StructType.fromDDL(ddlSchemaStr)
+  ddlSchema.printTreeString()
+  ```
+
+### Checking if a Column Exists in a DataFrame
+- Snippet:
+  ```python
+  # Checking Column exists using contains()
+  print(df.schema.fieldNames.contains("firstname"))
+  print(df.schema.contains(StructField("firstname",StringType,true)))
+  ```
+  
+### Complete Example of PySpark StructType & StructField
+- Complete code:
+  ```python
+  import pyspark
+  from pyspark.sql import SparkSession
+  from pyspark.sql.types import StructType,StructField, StringType, IntegerType,ArrayType,MapType
+  from pyspark.sql.functions import col,struct,when
+
+  spark = SparkSession.builder.master("local[1]") \
+                      .appName('SparkByExamples.com') \
+                      .getOrCreate()
+
+  data = [("James","","Smith","36636","M",3000),
+      ("Michael","Rose","","40288","M",4000),
+      ("Robert","","Williams","42114","M",4000),
+      ("Maria","Anne","Jones","39192","F",4000),
+      ("Jen","Mary","Brown","","F",-1)
+    ]
+
+  schema = StructType([ 
+      StructField("firstname",StringType(),True), 
+      StructField("middlename",StringType(),True), 
+      StructField("lastname",StringType(),True), 
+      StructField("id", StringType(), True), 
+      StructField("gender", StringType(), True), 
+      StructField("salary", IntegerType(), True) 
+    ])
+   
+  df = spark.createDataFrame(data=data,schema=schema)
+  df.printSchema()
+  df.show(truncate=False)
+
+  structureData = [
+      (("James","","Smith"),"36636","M",3100),
+      (("Michael","Rose",""),"40288","M",4300),
+      (("Robert","","Williams"),"42114","M",1400),
+      (("Maria","Anne","Jones"),"39192","F",5500),
+      (("Jen","Mary","Brown"),"","F",-1)
+    ]
+  structureSchema = StructType([
+          StructField('name', StructType([
+               StructField('firstname', StringType(), True),
+               StructField('middlename', StringType(), True),
+               StructField('lastname', StringType(), True)
+               ])),
+           StructField('id', StringType(), True),
+           StructField('gender', StringType(), True),
+           StructField('salary', IntegerType(), True)
+           ])
+
+  df2 = spark.createDataFrame(data=structureData,schema=structureSchema)
+  df2.printSchema()
+  df2.show(truncate=False)
+
+
+  updatedDF = df2.withColumn("OtherInfo", 
+      struct(col("id").alias("identifier"),
+      col("gender").alias("gender"),
+      col("salary").alias("salary"),
+      when(col("salary").cast(IntegerType()) < 2000,"Low")
+        .when(col("salary").cast(IntegerType()) < 4000,"Medium")
+        .otherwise("High").alias("Salary_Grade")
+    )).drop("id","gender","salary")
+
+  updatedDF.printSchema()
+  updatedDF.show(truncate=False)
+
+
+  """ Array & Map"""
+
+
+  arrayStructureSchema = StructType([
+      StructField('name', StructType([
+         StructField('firstname', StringType(), True),
+         StructField('middlename', StringType(), True),
+         StructField('lastname', StringType(), True)
+         ])),
+         StructField('hobbies', ArrayType(StringType()), True),
+         StructField('properties', MapType(StringType(),StringType()), True)
+      ])
+  ```
+  
+## PySpark Column Class | Operators & Functions
+
+### Intro
+- PySpark Column class represents a single Column in a DataFrame.
+- It provides functions that are most used to manipulate DataFrame Columns & Rows.
+- Some of these Column functions evaluate a Boolean expression that can be used with filter() transformation to filter the DataFrame Rows.
+- Provides functions to get a value from a list column by index, map value by key & index, and finally struct nested column.
+- PySpark also provides additional functions pyspark.sql.functions that take Column object and return a Column type.
+
+### Create Column Class Object
+- Snippet:
+  ```python
+  from pyspark.sql.functions import lit
+  colObj = lit("sparkbyexamples.com")
+
+  data=[("James",23),("Ann",40)]
+  df=spark.createDataFrame(data).toDF("name.fname","gender")
+  df.printSchema()
+  #root
+  # |-- name.fname: string (nullable = true)
+  # |-- gender: long (nullable = true)
+
+  # Using DataFrame object (df)
+  df.select(df.gender).show()
+  df.select(df["gender"]).show()
+  #Accessing column name with dot (with backticks)
+  df.select(df["`name.fname`"]).show()
+
+  #Using SQL col() function
+  from pyspark.sql.functions import col
+  df.select(col("gender")).show()
+  #Accessing column name with dot (with backticks)
+  df.select(col("`name.fname`")).show()
+
+  #Create DataFrame with struct using Row class
+  from pyspark.sql import Row
+  data=[Row(name="James",prop=Row(hair="black",eye="blue")),
+        Row(name="Ann",prop=Row(hair="grey",eye="black"))]
+  df=spark.createDataFrame(data)
+  df.printSchema()
+  #root
+  # |-- name: string (nullable = true)
+  # |-- prop: struct (nullable = true)
+  # |    |-- hair: string (nullable = true)
+  # |    |-- eye: string (nullable = true)
+
+  #Access struct column
+  df.select(df.prop.hair).show()
+  df.select(df["prop.hair"]).show()
+  df.select(col("prop.hair")).show()
+
+  #Access all columns from struct
+  df.select(col("prop.*")).show()
+  ```
+
+### PySpark Column Operators
+- Snippet:
+  ```python
+  data=[(100,2,1),(200,3,4),(300,4,4)]
+  df=spark.createDataFrame(data).toDF("col1","col2","col3")
+
+  #Arthmetic operations
+  df.select(df.col1 + df.col2).show()
+  df.select(df.col1 - df.col2).show() 
+  df.select(df.col1 * df.col2).show()
+  df.select(df.col1 / df.col2).show()
+  df.select(df.col1 % df.col2).show()
+
+  df.select(df.col2 > df.col3).show()
+  df.select(df.col2 < df.col3).show()
+  df.select(df.col2 == df.col3).show()
+  ```
+
+### PySpark Column Functions
+- alias() – Set’s name to Column
+  ```python
+  #alias
+  from pyspark.sql.functions import expr
+  df.select(df.fname.alias("first_name"), \
+            df.lname.alias("last_name")
+     ).show()
+
+  #Another example
+  df.select(expr(" fname ||','|| lname").alias("fullName") \
+     ).show()
+  ```
+- asc() & desc() – Sort the DataFrame columns by Ascending or Descending order.
+  ```python
+  #asc, desc to sort ascending and descending order repsectively.
+  df.sort(df.fname.asc()).show()
+  df.sort(df.fname.desc()).show()
+  ```
+- getField() – To get the value by key from MapType column and by stuct child name from StructType column
+  ```python
+  #Create DataFrame with struct, array & map
+  from pyspark.sql.types import StructType,StructField,StringType,ArrayType,MapType
+  data=[(("James","Bond"),["Java","C#"],{'hair':'black','eye':'brown'}),
+        (("Ann","Varsa"),[".NET","Python"],{'hair':'brown','eye':'black'}),
+        (("Tom Cruise",""),["Python","Scala"],{'hair':'red','eye':'grey'}),
+        (("Tom Brand",None),["Perl","Ruby"],{'hair':'black','eye':'blue'})]
+
+  schema = StructType([
+          StructField('name', StructType([
+              StructField('fname', StringType(), True),
+              StructField('lname', StringType(), True)])),
+          StructField('languages', ArrayType(StringType()),True),
+          StructField('properties', MapType(StringType(),StringType()),True)
+       ])
+  df=spark.createDataFrame(data,schema)
+  df.printSchema()
+
+  #Display's to console
+  root
+   |-- name: struct (nullable = true)
+   |    |-- fname: string (nullable = true)
+   |    |-- lname: string (nullable = true)
+   |-- languages: array (nullable = true)
+   |    |-- element: string (containsNull = true)
+   |-- properties: map (nullable = true)
+   |    |-- key: string
+   |    |-- value: string (valueContainsNull = true)
+
+  #getField from MapType
+  df.select(df.properties.getField("hair")).show()
+
+  #getField from Struct
+  df.select(df.name.getField("fname")).show()
+  ```
+  
+
+## PySpark Select Columns From DataFrame
+
+### Intro
+- PySpark select() is a transformation function hence it returns a new DataFrame with the selected columns.
+
+### Select Single & Multiple Columns From PySpark
+- Snippet:
+  ```python
+  df.select("firstname","lastname").show()
+  df.select(df.firstname,df.lastname).show()
+  df.select(df["firstname"],df["lastname"]).show()
+
+  #By using col() function
+  from pyspark.sql.functions import col
+  df.select(col("firstname"),col("lastname")).show()
+
+  #Select columns by regular expression
+  df.select(df.colRegex("`^.*name*`")).show()
+  ```
+
+### Select All Columns From List
+- Snippet:
+  ```python
+  # Select All columns from List
+  df.select(*columns).show()
+
+  # Select All columns
+  df.select([col for col in df.columns]).show()
+  df.select("*").show()
+  ```
+  
+### Select Columns by Index
+- Snippet:
+  ```python
+  #Selects first 3 columns and top 3 rows
+  df.select(df.columns[:3]).show(3)
+
+  #Selects columns 2 to 4  and top 3 rows
+  df.select(df.columns[2:4]).show(3)
+  ```
+  
+### Select Nested Struct Columns from PySpark
+- Snippet:
+  ```python
+  data = [
+          (("James",None,"Smith"),"OH","M"),
+          (("Anna","Rose",""),"NY","F"),
+          (("Julia","","Williams"),"OH","F"),
+          (("Maria","Anne","Jones"),"NY","M"),
+          (("Jen","Mary","Brown"),"NY","M"),
+          (("Mike","Mary","Williams"),"OH","M")
+          ]
+
+  from pyspark.sql.types import StructType,StructField, StringType        
+  schema = StructType([
+      StructField('name', StructType([
+           StructField('firstname', StringType(), True),
+           StructField('middlename', StringType(), True),
+           StructField('lastname', StringType(), True)
+           ])),
+       StructField('state', StringType(), True),
+       StructField('gender', StringType(), True)
+       ])
+  df2 = spark.createDataFrame(data = data, schema = schema)
+  df2.printSchema()
+  df2.show(truncate=False) # shows all columns
+
+  df2.select("name.firstname","name.lastname").show(truncate=False)
+  +---------+--------+
+  |firstname|lastname|
+  +---------+--------+
+  |James    |Smith   |
+  |Anna     |        |
+  |Julia    |Williams|
+  |Maria    |Jones   |
+  |Jen      |Brown   |
+  |Mike     |Williams|
+  +---------+--------+
+
+  df2.select("name.*").show(truncate=False)
+  +---------+----------+--------+
+  |firstname|middlename|lastname|
+  +---------+----------+--------+
+  |James    |null      |Smith   |
+  |Anna     |Rose      |        |
+  |Julia    |          |Williams|
+  |Maria    |Anne      |Jones   |
+  |Jen      |Mary      |Brown   |
+  |Mike     |Mary      |Williams|
+  +---------+----------+--------+
+  ```
+
+### Complete example:
+```python
+import pyspark
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+data = [("James","Smith","USA","CA"),
+    ("Michael","Rose","USA","NY"),
+    ("Robert","Williams","USA","CA"),
+    ("Maria","Jones","USA","FL")
+  ]
+
+columns = ["firstname","lastname","country","state"]
+df = spark.createDataFrame(data = data, schema = columns)
+df.show(truncate=False)
+
+df.select("firstname").show()
+
+df.select("firstname","lastname").show()
+
+#Using Dataframe object name
+df.select(df.firstname,df.lastname).show()
+
+# Using col function
+from pyspark.sql.functions import col
+df.select(col("firstname"),col("lastname")).show()
+
+data = [(("James",None,"Smith"),"OH","M"),
+        (("Anna","Rose",""),"NY","F"),
+        (("Julia","","Williams"),"OH","F"),
+        (("Maria","Anne","Jones"),"NY","M"),
+        (("Jen","Mary","Brown"),"NY","M"),
+        (("Mike","Mary","Williams"),"OH","M")
+        ]
+
+from pyspark.sql.types import StructType,StructField, StringType        
+schema = StructType([
+    StructField('name', StructType([
+         StructField('firstname', StringType(), True),
+         StructField('middlename', StringType(), True),
+         StructField('lastname', StringType(), True)
+         ])),
+     StructField('state', StringType(), True),
+     StructField('gender', StringType(), True)
+     ])
+
+df2 = spark.createDataFrame(data = data, schema = schema)
+df2.printSchema()
+df2.show(truncate=False) # shows all columns
+
+df2.select("name").show(truncate=False)
+df2.select("name.firstname","name.lastname").show(truncate=False)
+df2.select("name.*").show(truncate=False)
+```
