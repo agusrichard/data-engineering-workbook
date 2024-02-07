@@ -840,3 +840,175 @@ df2.select("name").show(truncate=False)
 df2.select("name.firstname","name.lastname").show(truncate=False)
 df2.select("name.*").show(truncate=False)
 ```
+
+## PySpark Collect() – Retrieve data from DataFrame
+- PySpark RDD/DataFrame collect() is an action operation that is used to retrieve all the elements of the dataset (from all nodes) to the driver node. We should use the collect() on smaller dataset usually after filter(), group() e.t.c. Retrieving larger datasets results in OutOfMemory error.
+- Snippet:
+  ```python
+  dataCollect = deptDF.collect()
+  print(dataCollect)
+
+  [Row(dept_name='Finance', dept_id=10), 
+  Row(dept_name='Marketing', dept_id=20), 
+  Row(dept_name='Sales', dept_id=30), 
+  Row(dept_name='IT', dept_id=40)]
+  ```
+- Usually, collect() is used to retrieve the action output when you have very small result set and calling collect() on an RDD/DataFrame with a bigger result set causes out of memory as it returns the entire dataset (from all workers) to the driver hence we should avoid calling collect() on a larger dataset.
+- select() is a transformation that returns a new DataFrame and holds the columns that are selected whereas collect() is an action that returns the entire data set in an Array to the driver.
+- Complete example:
+  ```python
+  import pyspark
+  from pyspark.sql import SparkSession
+
+  spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+  dept = [("Finance",10), \
+      ("Marketing",20), \
+      ("Sales",30), \
+      ("IT",40) \
+    ]
+  deptColumns = ["dept_name","dept_id"]
+  deptDF = spark.createDataFrame(data=dept, schema = deptColumns)
+  deptDF.printSchema()
+  deptDF.show(truncate=False)
+
+  dataCollect = deptDF.collect()
+
+  print(dataCollect)
+
+  dataCollect2 = deptDF.select("dept_name").collect()
+  print(dataCollect2)
+
+  for row in dataCollect:
+      print(row['dept_name'] + "," +str(row['dept_id']))
+  ```
+  
+## PySpark withColumn() Usage with Examples
+- PySpark withColumn() is a transformation function of DataFrame which is used to change the value, convert the datatype of an existing column, create a new column, and many more.
+- In order to create a new column, pass the column name you wanted to the first argument of withColumn() transformation function. Make sure this new column not already present on DataFrame, if it presents it updates the value of that column.
+- Complete example:
+  ```python
+  import pyspark
+  from pyspark.sql import SparkSession
+  from pyspark.sql.functions import col, lit
+  from pyspark.sql.types import StructType, StructField, StringType,IntegerType
+
+  spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+  data = [('James','','Smith','1991-04-01','M',3000),
+    ('Michael','Rose','','2000-05-19','M',4000),
+    ('Robert','','Williams','1978-09-05','M',4000),
+    ('Maria','Anne','Jones','1967-12-01','F',4000),
+    ('Jen','Mary','Brown','1980-02-17','F',-1)
+  ]
+
+  columns = ["firstname","middlename","lastname","dob","gender","salary"]
+  df = spark.createDataFrame(data=data, schema = columns)
+  df.printSchema()
+  df.show(truncate=False)
+
+  df2 = df.withColumn("salary",col("salary").cast("Integer"))
+  df2.printSchema()
+  df2.show(truncate=False)
+
+  df3 = df.withColumn("salary",col("salary")*100)
+  df3.printSchema()
+  df3.show(truncate=False) 
+
+  df4 = df.withColumn("CopiedColumn",col("salary")* -1)
+  df4.printSchema()
+
+  df5 = df.withColumn("Country", lit("USA"))
+  df5.printSchema()
+
+  df6 = df.withColumn("Country", lit("USA")) \
+     .withColumn("anotherColumn",lit("anotherValue"))
+  df6.printSchema()
+
+  df.withColumnRenamed("gender","sex") \
+    .show(truncate=False) 
+    
+  df4.drop("CopiedColumn") \
+  .show(truncate=False)
+  ```
+
+## PySpark withColumnRenamed to Rename Column on DataFrame
+- PySpark has a withColumnRenamed() function on DataFrame to change a column name. This is the most straight forward approach; this function takes two parameters; the first is your existing column name and the second is the new column name you wish for.
+- Note that withColumnRenamed function returns a new DataFrame and doesn’t modify the current DataFrame.
+- Complete code:
+  ```python
+  import pyspark
+  from pyspark.sql import SparkSession
+  from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+  from pyspark.sql.functions import *
+
+  spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+  dataDF = [(('James','','Smith'),'1991-04-01','M',3000),
+    (('Michael','Rose',''),'2000-05-19','M',4000),
+    (('Robert','','Williams'),'1978-09-05','M',4000),
+    (('Maria','Anne','Jones'),'1967-12-01','F',4000),
+    (('Jen','Mary','Brown'),'1980-02-17','F',-1)
+  ]
+
+  schema = StructType([
+          StructField('name', StructType([
+               StructField('firstname', StringType(), True),
+               StructField('middlename', StringType(), True),
+               StructField('lastname', StringType(), True)
+               ])),
+           StructField('dob', StringType(), True),
+           StructField('gender', StringType(), True),
+           StructField('salary', IntegerType(), True)
+           ])
+
+  df = spark.createDataFrame(data = dataDF, schema = schema)
+  df.printSchema()
+
+  # Example 1
+  df.withColumnRenamed("dob","DateOfBirth").printSchema()
+  # Example 2   
+  df2 = df.withColumnRenamed("dob","DateOfBirth") \
+      .withColumnRenamed("salary","salary_amount")
+  df2.printSchema()
+
+  # Example 3 
+  schema2 = StructType([
+      StructField("fname",StringType()),
+      StructField("middlename",StringType()),
+      StructField("lname",StringType())])
+      
+  df.select(col("name").cast(schema2),
+    col("dob"),
+    col("gender"),
+    col("salary")) \
+      .printSchema()    
+
+  # Example 4 
+  df.select(col("name.firstname").alias("fname"),
+    col("name.middlename").alias("mname"),
+    col("name.lastname").alias("lname"),
+    col("dob"),col("gender"),col("salary")) \
+    .printSchema()
+    
+  # Example 5
+  df4 = df.withColumn("fname",col("name.firstname")) \
+        .withColumn("mname",col("name.middlename")) \
+        .withColumn("lname",col("name.lastname")) \
+        .drop("name")
+  df4.printSchema()
+
+  #Example 7
+  newColumns = ["newCol1","newCol2","newCol3","newCol4"]
+  df.toDF(*newColumns).printSchema()
+
+  # Example 6
+  '''
+  not working
+  old_columns = Seq("dob","gender","salary","fname","mname","lname")
+  new_columns = Seq("DateOfBirth","Sex","salary","firstName","middleName","lastName")
+  columnsList = old_columns.zip(new_columns).map(f=>{col(f._1).as(f._2)})
+  df5 = df4.select(columnsList:_*)
+  df5.printSchema()
+  '''
+  ```
