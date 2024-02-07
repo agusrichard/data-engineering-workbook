@@ -1012,3 +1012,191 @@ df2.select("name.*").show(truncate=False)
   df5.printSchema()
   '''
   ```
+  
+## PySpark Where Filter Function | Multiple Conditions
+```python
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType,StructField, StringType, IntegerType, ArrayType
+from pyspark.sql.functions import col,array_contains
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+arrayStructureData = [
+        (("James","","Smith"),["Java","Scala","C++"],"OH","M"),
+        (("Anna","Rose",""),["Spark","Java","C++"],"NY","F"),
+        (("Julia","","Williams"),["CSharp","VB"],"OH","F"),
+        (("Maria","Anne","Jones"),["CSharp","VB"],"NY","M"),
+        (("Jen","Mary","Brown"),["CSharp","VB"],"NY","M"),
+        (("Mike","Mary","Williams"),["Python","VB"],"OH","M")
+        ]
+        
+arrayStructureSchema = StructType([
+        StructField('name', StructType([
+             StructField('firstname', StringType(), True),
+             StructField('middlename', StringType(), True),
+             StructField('lastname', StringType(), True)
+             ])),
+         StructField('languages', ArrayType(StringType()), True),
+         StructField('state', StringType(), True),
+         StructField('gender', StringType(), True)
+         ])
+
+
+df = spark.createDataFrame(data = arrayStructureData, schema = arrayStructureSchema)
+df.printSchema()
+df.show(truncate=False)
+
+df.filter(df.state == "OH") \
+    .show(truncate=False)
+
+df.filter(col("state") == "OH") \
+    .show(truncate=False)    
+    
+df.filter("gender  == 'M'") \
+    .show(truncate=False)    
+
+df.filter( (df.state  == "OH") & (df.gender  == "M") ) \
+    .show(truncate=False)        
+
+df.filter(array_contains(df.languages,"Java")) \
+    .show(truncate=False)        
+
+df.filter(df.name.lastname == "Williams") \
+    .show(truncate=False) 
+```
+
+### PySpark Distinct to Drop Duplicate Rows
+```python
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import expr
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+data = [("James", "Sales", 3000), \
+    ("Michael", "Sales", 4600), \
+    ("Robert", "Sales", 4100), \
+    ("Maria", "Finance", 3000), \
+    ("James", "Sales", 3000), \
+    ("Scott", "Finance", 3300), \
+    ("Jen", "Finance", 3900), \
+    ("Jeff", "Marketing", 3000), \
+    ("Kumar", "Marketing", 2000), \
+    ("Saif", "Sales", 4100) \
+  ]
+columns= ["employee_name", "department", "salary"]
+df = spark.createDataFrame(data = data, schema = columns)
+df.printSchema()
+df.show(truncate=False)
+
+#Distinct
+distinctDF = df.distinct()
+print("Distinct count: "+str(distinctDF.count()))
+distinctDF.show(truncate=False)
+
+#Drop duplicates
+df2 = df.dropDuplicates()
+print("Distinct count: "+str(df2.count()))
+df2.show(truncate=False)
+
+#Drop duplicates on selected columns
+dropDisDF = df.dropDuplicates(["department","salary"])
+print("Distinct count of department salary : "+str(dropDisDF.count()))
+dropDisDF.show(truncate=False)
+}
+```
+
+## PySpark orderBy() and sort() explained
+```python
+# Imports
+
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, asc,desc
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+simpleData = [("James","Sales","NY",90000,34,10000), \
+    ("Michael","Sales","NY",86000,56,20000), \
+    ("Robert","Sales","CA",81000,30,23000), \
+    ("Maria","Finance","CA",90000,24,23000), \
+    ("Raman","Finance","CA",99000,40,24000), \
+    ("Scott","Finance","NY",83000,36,19000), \
+    ("Jen","Finance","NY",79000,53,15000), \
+    ("Jeff","Marketing","CA",80000,25,18000), \
+    ("Kumar","Marketing","NY",91000,50,21000) \
+  ]
+columns= ["employee_name","department","state","salary","age","bonus"]
+
+df = spark.createDataFrame(data = simpleData, schema = columns)
+
+df.printSchema()
+df.show(truncate=False)
+
+df.sort("department","state").show(truncate=False)
+df.sort(col("department"),col("state")).show(truncate=False)
+
+df.orderBy("department","state").show(truncate=False)
+df.orderBy(col("department"),col("state")).show(truncate=False)
+
+df.sort(df.department.asc(),df.state.asc()).show(truncate=False)
+df.sort(col("department").asc(),col("state").asc()).show(truncate=False)
+df.orderBy(col("department").asc(),col("state").asc()).show(truncate=False)
+
+df.sort(df.department.asc(),df.state.desc()).show(truncate=False)
+df.sort(col("department").asc(),col("state").desc()).show(truncate=False)
+df.orderBy(col("department").asc(),col("state").desc()).show(truncate=False)
+
+df.createOrReplaceTempView("EMP")
+spark.sql("select employee_name,department,state,salary,age,bonus from EMP ORDER BY department asc").show(truncate=False)
+```
+
+## PySpark Groupby Explained with Example
+```python
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col,sum,avg,max
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+simpleData = [("James","Sales","NY",90000,34,10000),
+    ("Michael","Sales","NY",86000,56,20000),
+    ("Robert","Sales","CA",81000,30,23000),
+    ("Maria","Finance","CA",90000,24,23000),
+    ("Raman","Finance","CA",99000,40,24000),
+    ("Scott","Finance","NY",83000,36,19000),
+    ("Jen","Finance","NY",79000,53,15000),
+    ("Jeff","Marketing","CA",80000,25,18000),
+    ("Kumar","Marketing","NY",91000,50,21000)
+  ]
+
+schema = ["employee_name","department","state","salary","age","bonus"]
+df = spark.createDataFrame(data=simpleData, schema = schema)
+df.printSchema()
+df.show(truncate=False)
+
+df.groupBy("department").sum("salary").show(truncate=False)
+
+df.groupBy("department").count().show(truncate=False)
+
+
+df.groupBy("department","state") \
+    .sum("salary","bonus") \
+   .show(truncate=False)
+
+df.groupBy("department") \
+    .agg(sum("salary").alias("sum_salary"), \
+         avg("salary").alias("avg_salary"), \
+         sum("bonus").alias("sum_bonus"), \
+         max("bonus").alias("max_bonus") \
+     ) \
+    .show(truncate=False)
+    
+df.groupBy("department") \
+    .agg(sum("salary").alias("sum_salary"), \
+      avg("salary").alias("avg_salary"), \
+      sum("bonus").alias("sum_bonus"), \
+      max("bonus").alias("max_bonus")) \
+    .where(col("sum_bonus") >= 50000) \
+    .show(truncate=False)
+```
