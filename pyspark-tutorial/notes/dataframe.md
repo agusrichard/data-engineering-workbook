@@ -1200,3 +1200,5 @@ df.groupBy("department") \
     .where(col("sum_bonus") >= 50000) \
     .show(truncate=False)
 ```
+
+## PySpark Join Types | Join Two DataFrames
