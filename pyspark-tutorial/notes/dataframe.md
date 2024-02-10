@@ -1276,3 +1276,148 @@ joinDF = spark.sql("select * from EMP e, DEPT d where e.emp_dept_id == d.dept_id
 joinDF2 = spark.sql("select * from EMP e INNER JOIN DEPT d ON e.emp_dept_id == d.dept_id") \
   .show(truncate=False)
 ```
+
+## PySpark Union and UnionAll Explained
+```python
+# Imports
+import pyspark
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+simpleData = [("James","Sales","NY",90000,34,10000), \
+    ("Michael","Sales","NY",86000,56,20000), \
+    ("Robert","Sales","CA",81000,30,23000), \
+    ("Maria","Finance","CA",90000,24,23000) \
+  ]
+
+columns= ["employee_name","department","state","salary","age","bonus"]
+df = spark.createDataFrame(data = simpleData, schema = columns)
+df.printSchema()
+df.show(truncate=False)
+
+simpleData2 = [("James","Sales","NY",90000,34,10000), \
+    ("Maria","Finance","CA",90000,24,23000), \
+    ("Jen","Finance","NY",79000,53,15000), \
+    ("Jeff","Marketing","CA",80000,25,18000), \
+    ("Kumar","Marketing","NY",91000,50,21000) \
+  ]
+columns2= ["employee_name","department","state","salary","age","bonus"]
+
+df2 = spark.createDataFrame(data = simpleData2, schema = columns2)
+
+df2.printSchema()
+df2.show(truncate=False)
+
+unionDF = df.union(df2)
+unionDF.show(truncate=False)
+disDF = df.union(df2).distinct()
+disDF.show(truncate=False)
+
+unionAllDF = df.unionAll(df2)
+unionAllDF.show(truncate=False)
+```
+
+## PySpark unionByName()
+```python
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+# Create DataFrame df1 with columns name, and id
+data = [("James",34), ("Michael",56), \
+        ("Robert",30), ("Maria",24) ]
+
+df1 = spark.createDataFrame(data = data, schema=["name","id"])
+df1.printSchema()
+
+# Create DataFrame df2 with columns name and id
+data2=[(34,"James"),(45,"Maria"), \
+       (45,"Jen"),(34,"Jeff")]
+
+df2 = spark.createDataFrame(data = data2, schema = ["id","name"])
+df2.printSchema()
+
+# Using unionByName()
+df3 = df1.unionByName(df2)
+df3.printSchema()
+df3.show()
+
+# Using allowMissingColumns
+df1 = spark.createDataFrame([[5, 2, 6]], ["col0", "col1", "col2"])
+df2 = spark.createDataFrame([[6, 7, 3]], ["col1", "col2", "col3"])
+df3 = df1.unionByName(df2, allowMissingColumns=True)
+df3.printSchema()
+df3.show()
+```
+
+## PySpark UDF (User Defined Function)
+```python
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import StringType
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+columns = ["Seqno","Name"]
+data = [("1", "john jones"),
+    ("2", "tracey smith"),
+    ("3", "amy sanders")]
+
+df = spark.createDataFrame(data=data,schema=columns)
+
+df.show(truncate=False)
+
+def convertCase(str):
+    resStr=""
+    arr = str.split(" ")
+    for x in arr:
+       resStr= resStr + x[0:1].upper() + x[1:len(x)] + " "
+    return resStr 
+
+""" Converting function to UDF """
+convertUDF = udf(lambda z: convertCase(z))
+
+df.select(col("Seqno"), \
+    convertUDF(col("Name")).alias("Name") ) \
+.show(truncate=False)
+
+def upperCase(str):
+    return str.upper()
+
+upperCaseUDF = udf(lambda z:upperCase(z),StringType())    
+
+df.withColumn("Cureated Name", upperCaseUDF(col("Name"))) \
+.show(truncate=False)
+
+""" Using UDF on SQL """
+spark.udf.register("convertUDF", convertCase,StringType())
+df.createOrReplaceTempView("NAME_TABLE")
+spark.sql("select Seqno, convertUDF(Name) as Name from NAME_TABLE") \
+     .show(truncate=False)
+     
+spark.sql("select Seqno, convertUDF(Name) as Name from NAME_TABLE " + \
+          "where Name is not null and convertUDF(Name) like '%John%'") \
+     .show(truncate=False)  
+     
+""" null check """
+
+columns = ["Seqno","Name"]
+data = [("1", "john jones"),
+    ("2", "tracey smith"),
+    ("3", "amy sanders"),
+    ('4',None)]
+
+df2 = spark.createDataFrame(data=data,schema=columns)
+df2.show(truncate=False)
+df2.createOrReplaceTempView("NAME_TABLE2")
+    
+spark.udf.register("_nullsafeUDF", lambda str: convertCase(str) if not str is None else "" , StringType())
+
+spark.sql("select _nullsafeUDF(Name) from NAME_TABLE2") \
+     .show(truncate=False)
+
+spark.sql("select Seqno, _nullsafeUDF(Name) as Name from NAME_TABLE2 " + \
+          " where Name is not null and _nullsafeUDF(Name) like '%John%'") \
+     .show(truncate=False)  
+```
