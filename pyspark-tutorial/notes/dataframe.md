@@ -1421,3 +1421,217 @@ spark.sql("select Seqno, _nullsafeUDF(Name) as Name from NAME_TABLE2 " + \
           " where Name is not null and _nullsafeUDF(Name) like '%John%'") \
      .show(truncate=False)  
 ```
+
+## PySpark transform() Function with Example
+```python
+# Imports
+from pyspark.sql import SparkSession
+
+# Create SparkSession
+spark = SparkSession.builder \
+            .appName('SparkByExamples.com') \
+            .getOrCreate()
+
+# Prepare Data
+simpleData = (("Java",4000,5), \
+    ("Python", 4600,10),  \
+    ("Scala", 4100,15),   \
+    ("Scala", 4500,15),   \
+    ("PHP", 3000,20),  \
+  )
+columns= ["CourseName", "fee", "discount"]
+
+# Create DataFrame
+df = spark.createDataFrame(data = simpleData, schema = columns)
+df.printSchema()
+df.show(truncate=False)
+
+# Custom transformation 1
+from pyspark.sql.functions import upper
+def to_upper_str_columns(df):
+    return df.withColumn("CourseName",upper(df.CourseName))
+
+# Custom transformation 2
+def reduce_price(df,reduceBy):
+    return df.withColumn("new_fee",df.fee - reduceBy)
+
+# Custom transformation 3
+def apply_discount(df):
+    return df.withColumn("discounted_fee",  \
+             df.new_fee - (df.new_fee * df.discount) / 100)
+
+# transform() usage
+df2 = df.transform(to_upper_str_columns) \
+        .transform(reduce_price,1000) \
+        .transform(apply_discount) 
+                
+df2.show()
+
+# Create DataFrame with Array
+data = [
+ ("James,,Smith",["Java","Scala","C++"],["Spark","Java"]),
+ ("Michael,Rose,",["Spark","Java","C++"],["Spark","Java"]),
+ ("Robert,,Williams",["CSharp","VB"],["Spark","Python"])
+]
+df = spark.createDataFrame(data=data,schema=["Name","Languages1","Languages2"])
+df.printSchema()
+df.show()
+
+# using transform() SQL function
+from pyspark.sql.functions import upper
+from pyspark.sql.functions import transform
+df.select(transform("Languages1", lambda x: upper(x)).alias("languages1")) \
+  .show()
+```
+
+## PySpark apply Function to Column
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+columns = ["Seqno","Name"]
+data = [("1", "john jones"),
+    ("2", "tracey smith"),
+    ("3", "amy sanders")]
+
+df = spark.createDataFrame(data=data,schema=columns)
+
+df.show(truncate=False)
+
+# Apply function using withColumn
+from pyspark.sql.functions import upper
+df.withColumn("Upper_Name", upper(df.Name)) \
+  .show()
+
+# Apply function using select  
+df.select("Seqno","Name", upper(df.Name)) \
+  .show()
+
+# Apply function using sql()
+df.createOrReplaceTempView("TAB")
+spark.sql("select Seqno, Name, UPPER(Name) from TAB") \
+     .show()  
+
+# Create custom function
+def upperCase(str):
+    return str.upper()
+
+# Convert function to udf
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import StringType
+upperCaseUDF = udf(lambda x:upperCase(x),StringType())   
+
+# Custom UDF with withColumn()
+df.withColumn("Cureated Name", upperCaseUDF(col("Name"))) \
+  .show(truncate=False)
+
+# Custom UDF with select()  
+df.select(col("Seqno"), \
+    upperCaseUDF(col("Name")).alias("Name") ) \
+   .show(truncate=False)
+
+# Custom UDF with sql()
+spark.udf.register("upperCaseUDF", upperCaseUDF)
+df.createOrReplaceTempView("TAB")
+spark.sql("select Seqno, Name, upperCaseUDF(Name) from TAB") \
+     .show() 
+```
+
+## PySpark map() Transformation
+```python
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+data = ["Project",
+"Gutenberg’s",
+"Alice’s",
+"Adventures",
+"in",
+"Wonderland",
+"Project",
+"Gutenberg’s",
+"Adventures",
+"in",
+"Wonderland",
+"Project",
+"Gutenberg’s"]
+
+rdd=spark.sparkContext.parallelize(data)
+
+rdd2=rdd.map(lambda x: (x,1))
+for element in rdd2.collect():
+    print(element)
+    
+data = [('James','Smith','M',30),
+  ('Anna','Rose','F',41),
+  ('Robert','Williams','M',62), 
+]
+
+columns = ["firstname","lastname","gender","salary"]
+df = spark.createDataFrame(data=data, schema = columns)
+df.show()
+
+rdd2=df.rdd.map(lambda x: 
+    (x[0]+","+x[1],x[2],x[3]*2)
+    )  
+df2=rdd2.toDF(["name","gender","new_salary"]   )
+df2.show()
+
+#Referring Column Names
+rdd2=df.rdd.map(lambda x: 
+    (x["firstname"]+","+x["lastname"],x["gender"],x["salary"]*2)
+    ) 
+
+#Referring Column Names
+rdd2=df.rdd.map(lambda x: 
+    (x.firstname+","+x.lastname,x.gender,x.salary*2)
+    ) 
+
+def func1(x):
+    firstName=x.firstname
+    lastName=x.lastname
+    name=firstName+","+lastName
+    gender=x.gender.lower()
+    salary=x.salary*2
+    return (name,gender,salary)
+
+rdd2=df.rdd.map(lambda x: func1(x))
+```
+
+## PySpark flatMap() Transformation
+```python
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+data = ["Project Gutenberg’s",
+        "Alice’s Adventures in Wonderland",
+        "Project Gutenberg’s",
+        "Adventures in Wonderland",
+        "Project Gutenberg’s"]
+rdd=spark.sparkContext.parallelize(data)
+for element in rdd.collect():
+    print(element)
+
+#Flatmap    
+rdd2=rdd.flatMap(lambda x: x.split(" "))
+for element in rdd2.collect():
+    print(element)
+```
+```python
+import pyspark
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('pyspark-by-examples').getOrCreate()
+
+arrayData = [
+        ('James',['Java','Scala'],{'hair':'black','eye':'brown'}),
+        ('Michael',['Spark','Java',None],{'hair':'brown','eye':None}),
+        ('Robert',['CSharp',''],{'hair':'red','eye':''}),
+        ('Washington',None,None),
+        ('Jefferson',['1','2'],{})]
+df = spark.createDataFrame(data=arrayData, schema = ['name','knownLanguages','properties'])
+
+from pyspark.sql.functions import explode
+df2 = df.select(df.name,explode(df.knownLanguages))
+df2.printSchema()
+df2.show()
+```
