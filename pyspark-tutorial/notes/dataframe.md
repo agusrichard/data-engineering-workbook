@@ -1635,3 +1635,134 @@ df2 = df.select(df.name,explode(df.knownLanguages))
 df2.printSchema()
 df2.show()
 ```
+
+## PySpark foreach() Usage with Examples
+```python
+# Import
+from pyspark.sql import SparkSession
+
+# Create SparkSession
+spark = SparkSession.builder.appName('SparkByExamples.com') \
+                    .getOrCreate()
+
+# Prepare Data
+columns = ["Seqno","Name"]
+data = [("1", "john jones"),
+    ("2", "tracey smith"),
+    ("3", "amy sanders")]
+
+# Create DataFrame
+df = spark.createDataFrame(data=data,schema=columns)
+df.show()
+
+# foreach() Example
+def f(df):
+    print(df.Seqno)
+df.foreach(f)
+
+# foreach() with RDD example
+accum=spark.sparkContext.accumulator(0)
+rdd=spark.sparkContext.parallelize([1,2,3,4,5])
+rdd.foreach(lambda x:accum.add(x))
+print(accum.value) #Accessed by driver
+```
+
+## PySpark Random Sample with Example
+```python
+from pyspark.sql import SparkSession
+spark = SparkSession.builder \
+    .master("local[1]") \
+    .appName("SparkByExamples.com") \
+    .getOrCreate()
+
+df=spark.range(100)
+print(df.sample(0.06).collect())
+
+print(df.sample(0.1,123).collect())
+# Output: 36,37,41,43,56,66,69,75,83
+
+print(df.sample(0.1,123).collect())
+# Output: 36,37,41,43,56,66,69,75,83
+
+print(df.sample(0.1,456).collect())
+# Output: 19,21,42,48,49,50,75,80
+
+print(df.sample(True,0.3,123).collect()) # with Duplicates
+# Output: 0,5,9,11,14,14,16,17,21,29,33,41,42,52,52,54,58,65,65,71,76,79,85,96
+print(df.sample(0.3,123).collect()) #  No duplicates
+# Output: 0,4,17,19,24,25,26,36,37,41,43,44,53,56,66,68,69,70,71,75,76,78,83,84,88,94,96,97,98
+```
+
+## PySpark fillna() & fill() – Replace NULL/None Values
+```python
+from pyspark.sql import SparkSession
+spark = SparkSession.builder \
+    .master("local[1]") \
+    .appName("SparkByExamples.com") \
+    .getOrCreate()
+
+filePath="resources/small_zipcode.csv"
+df = spark.read.options(header='true', inferSchema='true') \
+          .csv(filePath)
+
+df.printSchema()
+df.show(truncate=False)
+
+
+df.fillna(value=0).show()
+df.fillna(value=0,subset=["population"]).show()
+df.na.fill(value=0).show()
+df.na.fill(value=0,subset=["population"]).show()
+
+
+df.fillna(value="").show()
+df.na.fill(value="").show()
+
+df.fillna("unknown",["city"]) \
+    .fillna("",["type"]).show()
+
+df.fillna({"city": "unknown", "type": ""}) \
+    .show()
+
+df.na.fill("unknown",["city"]) \
+    .na.fill("",["type"]).show()
+
+df.na.fill({"city": "unknown", "type": ""}) \
+    .show()
+```
+
+## PySpark Pivot and Unpivot DataFrame
+```python
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import expr
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+data = [("Banana",1000,"USA"), ("Carrots",1500,"USA"), ("Beans",1600,"USA"), \
+      ("Orange",2000,"USA"),("Orange",2000,"USA"),("Banana",400,"China"), \
+      ("Carrots",1200,"China"),("Beans",1500,"China"),("Orange",4000,"China"), \
+      ("Banana",2000,"Canada"),("Carrots",2000,"Canada"),("Beans",2000,"Mexico")]
+
+columns= ["Product","Amount","Country"]
+df = spark.createDataFrame(data = data, schema = columns)
+df.printSchema()
+df.show(truncate=False)
+
+pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
+pivotDF.printSchema()
+pivotDF.show(truncate=False)
+
+pivotDF = df.groupBy("Product","Country") \
+      .sum("Amount") \
+      .groupBy("Product") \
+      .pivot("Country") \
+      .sum("sum(Amount)")
+pivotDF.printSchema()
+pivotDF.show(truncate=False)
+
+""" unpivot """
+unpivotExpr = "stack(3, 'Canada', Canada, 'China', China, 'Mexico', Mexico) as (Country,Total)"
+unPivotDF = pivotDF.select("Product", expr(unpivotExpr)) \
+    .where("Total is not null")
+unPivotDF.show(truncate=False)
+```
