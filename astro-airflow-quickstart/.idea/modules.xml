@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/astro-quickstart.iml" filepath="$PROJECT_DIR$/.idea/astro-quickstart.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/astro-airflow-quickstart.iml" filepath="$PROJECT_DIR$/.idea/astro-airflow-quickstart.iml" />
     </modules>
   </component>
 </project>

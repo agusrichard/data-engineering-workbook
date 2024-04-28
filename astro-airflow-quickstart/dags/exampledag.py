@@ -68,11 +68,11 @@ def example_astronauts():
         craft = person_in_space["craft"]
         name = person_in_space["name"]
 
-        print(f"{name} is currently in space flying on the {craft}! {greeting}!!! Long live and prosper")
+        print(f"{name} is currently in space flying on the {craft}! {greeting}")
 
     # Use dynamic task mapping to run the print_astronaut_craft task for each
     # Astronaut in space
-    print_astronaut_craft.partial(greeting="Hello from space! :)").expand(
+    print_astronaut_craft.partial(greeting="Hello! :)").expand(
         person_in_space=get_astronauts()  # Define dependencies using TaskFlow API syntax
     )
 
