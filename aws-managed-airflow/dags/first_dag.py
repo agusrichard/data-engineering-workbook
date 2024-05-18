@@ -1,3 +1,7 @@
+"""
+Deploy to AWS MWAA is kinda hard you know!
+"""
+
 from datetime import datetime
 from airflow.decorators import dag, task
 

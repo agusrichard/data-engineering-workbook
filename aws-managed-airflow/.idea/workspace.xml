@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f72eaa55-3290-4e85-9b5a-96d5c8356412" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../astro-airflow-101/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../astro-airflow-101/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dags/first_dag.py" beforeDir="false" afterPath="$PROJECT_DIR$/dags/first_dag.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,6 +84,7 @@
       <workItem from="1715358522981" duration="214000" />
       <workItem from="1715443459358" duration="1594000" />
       <workItem from="1715564523743" duration="1036000" />
+      <workItem from="1716044218745" duration="24000" />
     </task>
     <servers />
   </component>
