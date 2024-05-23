@@ -1,4 +1,5 @@
 import aiohttp
+from typing import Awaitable
 
 from airflow.exceptions import AirflowException
 from airflow.models import Connection
@@ -10,8 +11,9 @@ def get_pokeapi_url(url: str) -> str:
     base_url = f"{connection.schema}://{connection.host}"
     return f"{base_url}{url}"
 
-async def request_pokeapi(url: str):
+async def request_pokeapi(url: str) -> dict:
     request_url = get_pokeapi_url(url)
+    print(f"request_url: {request_url}")
     async with aiohttp.ClientSession() as session:
         async with session.get(request_url) as response:
             return await response.json()
