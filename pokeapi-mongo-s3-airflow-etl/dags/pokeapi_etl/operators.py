@@ -40,7 +40,7 @@ class PokeAPIAsyncOperator(BaseOperator):
                 self.entity_name, item, self._context.list_offset
             )
             await asyncio.sleep(random())
-            if item > 500:
+            if not data:
                 raise StopException
             print(f">got {data}")
 
