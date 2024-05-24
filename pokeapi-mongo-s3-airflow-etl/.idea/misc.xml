@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="sdkName" value="Python 3.9 (PyCharmLearningProject)" />
+    <option name="enabledOnReformat" value="true" />
+    <option name="enabledOnSave" value="true" />
+    <option name="executionMode" value="BINARY" />
+    <option name="pathToExecutable" value="$USER_HOME$/.pyenv/shims/black" />
+    <option name="sdkName" value="Remote Python 3.11.9 Docker (pokeapi-mongo-s-3-airflow-etl_81689a/airflow:latest)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.11.9 Docker (pokeapi-mongo-s-3-airflow-etl_81689a/airflow:latest)" project-jdk-type="Python SDK" />
+  <component name="PyPackaging">
+    <option name="earlyReleasesAsUpgrades" value="true" />
+  </component>
 </project>

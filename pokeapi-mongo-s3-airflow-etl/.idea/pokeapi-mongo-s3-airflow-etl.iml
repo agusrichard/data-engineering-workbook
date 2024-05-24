@@ -7,4 +7,11 @@
     <orderEntry type="jdk" jdkName="Remote Python 3.11.9 Docker (pokeapi-mongo-s-3-airflow-etl_81689a/airflow:latest)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
+  <component name="PyDocumentationSettings">
+    <option name="format" value="NUMPY" />
+    <option name="myDocStringFormat" value="NumPy" />
+  </component>
+  <component name="TestRunnerService">
+    <option name="PROJECT_TEST_RUNNER" value="py.test" />
+  </component>
 </module>
