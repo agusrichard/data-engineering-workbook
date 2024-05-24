@@ -24,13 +24,6 @@ async def consumer(queue: Queue, num: int):
     while True:
         item = await queue.get()
         await asyncio.sleep(random())
-        # try:
-        #     item = queue.get_nowait()
-        #     await asyncio.sleep(random())
-        # except asyncio.QueueEmpty:
-        #     print("Consumer: got nothing, waiting a while...")
-        #     await asyncio.sleep(0.5)
-        #     continue
         if item > LIMIT:
             raise StopException
         print(f">got {item}")

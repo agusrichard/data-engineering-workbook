@@ -6,18 +6,13 @@ from airflow.models import Variable
 
 
 class PokeAPIContext:
-    __slots__ = (
-        "context",
-        "request_concurrency_num",
-        "request_list_offset",
-    )
+    __slots__ = ("context", "concurrency_num", "list_offset", "max_size_queue")
 
     def __init__(self, airflow_context: dict):
         self.context = airflow_context
-        self.request_concurrency_num = Variable.get(
-            "REQUEST_CONCURRENCY_NUM", default_var=10
-        )
-        self.request_list_offset = Variable.get("REQUEST_LIST_OFFSET", default_var=50)
+        self.concurrency_num = Variable.get("CONCURRENCY_NUM", default_var=10)
+        self.list_offset = Variable.get("LIST_OFFSET", default_var=50)
+        self.max_size_queue = Variable.get("MAX_SIZE_QUEUE", default_var=10)
 
 
 def context_provider(func: Callable):

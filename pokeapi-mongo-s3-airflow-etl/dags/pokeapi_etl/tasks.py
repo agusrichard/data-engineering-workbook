@@ -1,18 +1,15 @@
 import asyncio
-from typing import List
 
-from airflow.decorators import task_group, task
+from airflow.decorators import task
 from airflow.exceptions import AirflowException
 
-from pokeapi_etl.operators import PokeAPIAsyncOperator
-from pokeapi_etl.context import context_provider
-from pokeapi_etl.utils import ping_mongo, request_pokeapi
+from pokeapi_etl.utils import ping_mongo, request_pokeapi_data
 
 
 @task
 def ensure_pokeapi():
     async def inner():
-        response = await request_pokeapi("/pokemon/ditto")
+        response = await request_pokeapi_data("pokemon", 1)
         if not response:
             raise AirflowException("Failed to connect to PokeAPI")
 
