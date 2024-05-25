@@ -1,9 +1,12 @@
+import asyncio
 import aiohttp
 from typing import List
 
 from airflow.models import Connection
 from airflow.exceptions import AirflowException
 from airflow.providers.mongo.hooks.mongo import MongoHook
+
+from pokeapi_etl.exceptions import OutOfQuotaException
 
 
 def get_pokeapi_url(entity_name: str) -> str:
@@ -46,36 +49,6 @@ async def request_pokeapi(full_url: str) -> dict:
             return await response.json()
 
 
-async def request_pokeapi_data(entity_name: str, entity_id: int) -> dict:
-    """
-    Request specific data from the PokeAPI for a given entity.
-
-    Parameters
-    ----------
-    entity_name : str
-        The name of the entity to request (e.g., 'pokemon', 'ability').
-    entity_id : int
-        The ID of the entity to request.
-
-    Returns
-    -------
-    dict
-        The data returned from the PokeAPI for the specified entity.
-
-    Raises
-    ------
-    Exception
-        If the request fails, an exception with the error message is printed.
-    """
-    try:
-        request_url = get_pokeapi_url(f"{entity_name}/{entity_id}")
-        print(f"Request PokeAPI data {entity_name}: {request_url}")
-        data = await request_pokeapi(request_url)
-        return data
-    except Exception as e:
-        print(f"Failed requesting PokeAPI data: {str(e)}")
-
-
 async def request_pokeapi_list(
     entity_name: str, offset: int, limit: int = 0
 ) -> List[dict]:
@@ -110,6 +83,11 @@ async def request_pokeapi_list(
         print(f"Failed requesting PokeAPI list: {str(e)}")
 
 
+async def request_pokeapi_data(batch: List[str]) -> List[dict]:
+    result = await asyncio.gather(*[request_pokeapi(item) for item in batch])
+    return list(result)
+
+
 def get_mongo_client():
     hook = MongoHook(mongo_conn_id="mongo_default")
     return hook.get_conn()
@@ -132,7 +110,7 @@ def ping_mongo():
         raise AirflowException("Failed to connect to MongoDB")
 
 
-def upload_pokeapi_list(entity_name: str, batch: List[dict]):
+def insert_pokeapi_list(entity_name: str, batch: List[dict]):
     try:
         client = get_mongo_client()
         db = client.pokeapi_list
@@ -142,3 +120,30 @@ def upload_pokeapi_list(entity_name: str, batch: List[dict]):
             print(f"Inserted to '{entity_name}' collection: {result.inserted_ids}")
     except Exception as e:
         print(f"Failed to insert: {e}")
+        raise e
+
+
+def get_pokeapi_list_collection(entity_name: str):
+    try:
+        client = get_mongo_client()
+        db = client.pokeapi_list
+        return db[entity_name]
+    except Exception as e:
+        print(f"Failed to get PokeAPI list: {e}")
+        raise e
+
+
+def insert_pokeapi_data(entity_name: str, batch: List[dict]):
+    try:
+        client = get_mongo_client()
+        db = client.pokeapi_data
+        collection = db[entity_name]
+        if batch:
+            result = collection.insert_many(batch)
+            print(f"Inserted to '{entity_name}' collection: {result.inserted_ids}")
+    except Exception as e:
+        print(f"Failed to insert: {e}")
+        if "you are over your space quota" not in str(e):
+            raise OutOfQuotaException
+
+        raise e

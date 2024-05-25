@@ -8,7 +8,7 @@ Resource: https://pokeapi.co/docs/v2#pokemon
 from datetime import datetime
 from airflow.decorators import dag
 
-from pokeapi_etl.task_groups import ensure_prerequisites, ingest_list
+from pokeapi_etl.task_groups import ensure_prerequisites, ingest_list, ingest_data
 
 
 @dag(
@@ -23,8 +23,9 @@ from pokeapi_etl.task_groups import ensure_prerequisites, ingest_list
 def pokeapi_etl():
     ensure_prerequisites_group = ensure_prerequisites()
     ingest_list_group = ingest_list()
+    ingest_data_group = ingest_data()
 
-    ensure_prerequisites_group >> ingest_list_group
+    ensure_prerequisites_group >> ingest_list_group >> ingest_data_group
 
 
 pokeapi_etl()

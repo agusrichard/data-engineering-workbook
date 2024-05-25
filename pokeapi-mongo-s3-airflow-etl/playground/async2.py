@@ -19,7 +19,7 @@ async def producer(queue: Queue):
         i += OFFSET
 
 
-async def consumer(queue: Queue, num: int):
+async def _consumer(queue: Queue, num: int):
     print(f"Consumer {num}: Running")
     while True:
         item = await queue.get()
