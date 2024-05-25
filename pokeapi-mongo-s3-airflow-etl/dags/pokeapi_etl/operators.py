@@ -8,7 +8,7 @@ from airflow.models.baseoperator import BaseOperator
 
 from pokeapi_etl.context import PokeAPIContext
 from pokeapi_etl.exceptions import StopException
-from pokeapi_etl.utils import request_pokeapi_list
+from pokeapi_etl.utils import request_pokeapi_list, upload_pokeapi_list
 
 
 class PokeAPIAsyncOperator(BaseOperator):
@@ -39,10 +39,9 @@ class PokeAPIAsyncOperator(BaseOperator):
             data = await request_pokeapi_list(
                 self.entity_name, item, self._context.list_offset
             )
-            await asyncio.sleep(random())
+            upload_pokeapi_list(self.entity_name, data)
             if not data:
                 raise StopException
-            print(f">got {data}")
 
     async def _ingest_list(self):
         try:

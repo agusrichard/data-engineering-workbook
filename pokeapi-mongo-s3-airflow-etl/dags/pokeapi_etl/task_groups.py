@@ -5,13 +5,20 @@ from pokeapi_etl.operators import PokeAPIAsyncOperator
 
 
 @task_group
+def ensure_mongo():
+    tasks.ensure_mongo_connection() >> tasks.drop_all_collections()
+
+
+@task_group
 def ensure_prerequisites():
     tasks.ensure_pokeapi()
-    tasks.ensure_mongo()
+    ensure_mongo()
 
 
 @task_group
 def ingest_list():
-    PokeAPIAsyncOperator(
-        task_id="ingest_pokemon_list", entity_name="pokemon", operation_type="list"
-    )
+    entity_list = ["pokemon", "type", "pokemon-habitat", "pokemon-species", "ability"]
+    for entity in entity_list:
+        PokeAPIAsyncOperator(
+            task_id=f"ingest_{entity}_list", entity_name=entity, operation_type="list"
+        )

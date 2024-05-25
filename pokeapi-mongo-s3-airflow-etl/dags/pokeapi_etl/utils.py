@@ -1,7 +1,8 @@
 import aiohttp
+from typing import List
 
-from airflow.exceptions import AirflowException
 from airflow.models import Connection
+from airflow.exceptions import AirflowException
 from airflow.providers.mongo.hooks.mongo import MongoHook
 
 
@@ -75,7 +76,9 @@ async def request_pokeapi_data(entity_name: str, entity_id: int) -> dict:
         print(f"Failed requesting PokeAPI data: {str(e)}")
 
 
-async def request_pokeapi_list(entity_name: str, offset: int, limit: int = 0) -> dict:
+async def request_pokeapi_list(
+    entity_name: str, offset: int, limit: int = 0
+) -> List[dict]:
     """
     Request a list of entities from the PokeAPI with pagination support.
 
@@ -90,7 +93,7 @@ async def request_pokeapi_list(entity_name: str, offset: int, limit: int = 0) ->
 
     Returns
     -------
-    dict
+    List[dict]
         The list of entities returned from the PokeAPI.
 
     Raises
@@ -107,6 +110,11 @@ async def request_pokeapi_list(entity_name: str, offset: int, limit: int = 0) ->
         print(f"Failed requesting PokeAPI list: {str(e)}")
 
 
+def get_mongo_client():
+    hook = MongoHook(mongo_conn_id="mongo_default")
+    return hook.get_conn()
+
+
 def ping_mongo():
     """
     Ping the MongoDB deployment to ensure a successful connection.
@@ -116,10 +124,21 @@ def ping_mongo():
     AirflowException
         If the connection to MongoDB fails.
     """
-    hook = MongoHook(mongo_conn_id="mongo_default")
-    client = hook.get_conn()
+    client = get_mongo_client()
     try:
-        client.admin.command('ping')
+        client.admin.command("ping")
         print("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception:
         raise AirflowException("Failed to connect to MongoDB")
+
+
+def upload_pokeapi_list(entity_name: str, batch: List[dict]):
+    try:
+        client = get_mongo_client()
+        db = client.pokeapi_list
+        collection = db[entity_name]
+        if batch:
+            result = collection.insert_many(batch)
+            print(f"Inserted to '{entity_name}' collection: {result.inserted_ids}")
+    except Exception as e:
+        print(f"Failed to insert: {e}")
