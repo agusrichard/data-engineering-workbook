@@ -1,0 +1,11 @@
+services:
+  pyspark-main:
+    image: quay.io/jupyter/pyspark-notebook
+    container_name: pyspark-udemy-course-main
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/home/jovyan/work
+    working_dir: /home/jovyan/work
