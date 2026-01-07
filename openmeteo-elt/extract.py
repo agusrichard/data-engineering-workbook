@@ -3,6 +3,7 @@ from pathlib import Path
 
 import httpx
 import pandas as pd
+from sqlalchemy import create_engine
 
 
 async def fetch_weather(
@@ -49,10 +50,11 @@ async def fetch_weather(
     return data
 
 
-def transform_to_dataframe(data: dict, output_dir: Path):
+def transform_to_dataframe(data: dict, output_dir: Path, db_engine):
     """
     Transforms a single weather data dictionary into a pandas DataFrame,
-    saves it to an individual CSV, and appends it to a combined CSV.
+    saves it to an individual CSV, appends it to a combined CSV,
+    and writes it to the PostgreSQL database.
     """
     hourly_data = data.get("hourly", {})
     hourly_units = data.get("hourly_units", {})
@@ -63,6 +65,25 @@ def transform_to_dataframe(data: dict, output_dir: Path):
 
     df = pd.DataFrame(hourly_data)
 
+    # --- Database Write ---
+    # Create a copy for SQL with correct column names and types
+    df_sql = df.copy()
+    df_sql["city"] = city
+    df_sql["time"] = pd.to_datetime(df_sql["time"])
+
+    # Filter to ensure only schema columns are present
+    expected_cols = ["city", "time", "temperature_2m", "relativehumidity_2m", "windspeed_10m"]
+    # Verify columns exist before selecting to avoid KeyError
+    available_cols = [c for c in expected_cols if c in df_sql.columns]
+    df_sql = df_sql[available_cols]
+
+    try:
+        df_sql.to_sql("weather_data", db_engine, if_exists="append", index=False)
+        print(f"Written data for {city} to database.")
+    except Exception as e:
+        print(f"Failed to write to DB for {city}: {e}")
+
+    # --- CSV Write ---
     # Rename columns to include units
     rename_map = {}
     for col in df.columns:
@@ -83,8 +104,6 @@ def transform_to_dataframe(data: dict, output_dir: Path):
     print(f"Saved {output_file}")
 
     # Append to combined CSV
-    # Note: Since we're running in a single-threaded asyncio loop,
-    # blocking IO here ensures atomic writes without explicit locks.
     combined_file = output_dir / "all_cities_weather.csv"
     header = not combined_file.exists()
     df.to_csv(combined_file, mode="a", header=header, index=False)
@@ -97,12 +116,18 @@ async def fetch_and_save(
     lon: float,
     semaphore: asyncio.Semaphore,
     output_dir: Path,
+    db_engine,
 ):
     data = await fetch_weather(client, city, lat, lon, semaphore)
-    transform_to_dataframe(data, output_dir)
+    transform_to_dataframe(data, output_dir, db_engine)
 
 
 async def main():
+    # Database connection
+    # Using the service name 'postgres' from docker-compose
+    db_url = "postgresql://user:password@postgres:5432/weather_db"
+    engine = create_engine(db_url)
+
     # Coordinates for a few cities
     cities = {
         "London": (51.5074, -0.1278),
@@ -142,13 +167,14 @@ async def main():
     async with httpx.AsyncClient() as client:
         tasks = []
         for city, (lat, lon) in cities.items():
-            tasks.append(fetch_and_save(client, city, lat, lon, semaphore, output_dir))
+            tasks.append(fetch_and_save(client, city, lat, lon, semaphore, output_dir, engine))
 
         # Run all requests concurrently
         await asyncio.gather(*tasks)
 
-    print(f"\nAll data saved to {output_dir}/")
+    print(f"\nAll data saved to {output_dir}/ and database.")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+3
