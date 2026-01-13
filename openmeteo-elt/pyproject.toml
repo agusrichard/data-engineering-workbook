@@ -1,15 +1,19 @@
 [project]
 name = "openmeteo-elt"
 version = "0.1.0"
-description = "Add your description here"
+description = "ELT pipeline for OpenMeteo data using Airflow"
 readme = "README.md"
-requires-python = ">=3.14.2"
+requires-python = ">=3.10, <3.14"
 dependencies = [
     "httpx>=0.28.1",
     "pandas>=2.3.3",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "apache-airflow>=3.1.5",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest>=8.0.0",
     "ruff>=0.14.10",
 ]

@@ -1,15 +1,16 @@
-FROM python:3.14-slim
+FROM apache/airflow:3.1.5-python3.12
 
-WORKDIR /app
+USER root
 
-# Install dependencies
-# We install directly to avoid complexity with uv/poetry for this simple script
-# and to bypass potential "requires-python" strict checks if 3.14 is not available.
-RUN pip install --no-cache-dir pandas httpx sqlalchemy psycopg2-binary
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-COPY extract.py .
+USER airflow
 
-# Create output directory
-RUN mkdir -p csvs
+# Copy dependency files
+COPY pyproject.toml .
+COPY uv.lock .
 
-CMD ["tail", "-f", "/dev/null"]
+# Install dependencies using uv into the system environment
+# We use --system to install into the container's python environment
+RUN uv sync --frozen

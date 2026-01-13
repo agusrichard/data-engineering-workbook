@@ -1,10 +1,9 @@
 import asyncio
 from pathlib import Path
-
 import httpx
 import pandas as pd
 from sqlalchemy import create_engine
-
+import datetime
 
 async def fetch_weather(
     client: httpx.AsyncClient,
@@ -27,8 +26,6 @@ async def fetch_weather(
         params["timezone"] = "auto"
     else:
         # If no timestamps are provided, fetch for the current day
-        import datetime
-
         today = datetime.date.today()
         params["start_date"] = today.isoformat()
         params["end_date"] = today.isoformat()
@@ -100,6 +97,7 @@ def transform_to_dataframe(data: dict, output_dir: Path, db_engine):
     # Save individual CSV
     city_name_safe = city.lower().replace(" ", "_")
     output_file = output_dir / f"{city_name_safe}_weather.csv"
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"Saved {output_file}")
 
@@ -120,61 +118,3 @@ async def fetch_and_save(
 ):
     data = await fetch_weather(client, city, lat, lon, semaphore)
     transform_to_dataframe(data, output_dir, db_engine)
-
-
-async def main():
-    # Database connection
-    # Using the service name 'postgres' from docker-compose
-    db_url = "postgresql://user:password@postgres:5432/weather_db"
-    engine = create_engine(db_url)
-
-    # Coordinates for a few cities
-    cities = {
-        "London": (51.5074, -0.1278),
-        "New York": (40.7128, -74.0060),
-        "Tokyo": (35.6895, 139.6917),
-        "Sydney": (-33.8688, 151.2093),
-        "Paris": (48.8566, 2.3522),
-        "Berlin": (52.5200, 13.4050),
-        "Madrid": (40.4168, -3.7038),
-        "Rome": (41.9028, 12.4964),
-        "Cairo": (30.0444, 31.2357),
-        "Mumbai": (19.0760, 72.8777),
-        "Beijing": (39.9042, 116.4074),
-        "Sao Paulo": (-23.5505, -46.6333),
-        "Mexico City": (19.4326, -99.1332),
-        "Los Angeles": (34.0522, -118.2437),
-        "Chicago": (41.8781, -87.6298),
-        "Moscow": (55.7558, 37.6173),
-        "Istanbul": (41.0082, 28.9784),
-        "Seoul": (37.5665, 126.9780),
-        "Bangkok": (13.7563, 100.5018),
-        "Lagos": (6.5244, 3.3792),
-    }
-
-    output_dir = Path("csvs")
-    if not output_dir.exists():
-        print(f"Creating directory: {output_dir}")
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-
-    # Clean up old combined file to avoid appending to previous runs
-    combined_file = output_dir / "all_cities_weather.csv"
-    if combined_file.exists():
-        combined_file.unlink()
-
-    semaphore = asyncio.Semaphore(5)
-    async with httpx.AsyncClient() as client:
-        tasks = []
-        for city, (lat, lon) in cities.items():
-            tasks.append(fetch_and_save(client, city, lat, lon, semaphore, output_dir, engine))
-
-        # Run all requests concurrently
-        await asyncio.gather(*tasks)
-
-    print(f"\nAll data saved to {output_dir}/ and database.")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-3
