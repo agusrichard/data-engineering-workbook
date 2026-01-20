@@ -1,3 +1,7 @@
+CREATE DATABASE weather_db;
+
+\c weather_db
+
 CREATE TABLE IF NOT EXISTS weather_data (
     city VARCHAR(100),
     time TIMESTAMP,

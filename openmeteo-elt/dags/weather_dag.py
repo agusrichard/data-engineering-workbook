@@ -1,16 +1,16 @@
+import asyncio
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import httpx
 from airflow import DAG
 from airflow.decorators import task
-from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
 from sqlalchemy import create_engine
-import asyncio
-import httpx
-from pathlib import Path
-import sys
-import os
 
 # Add include directory to sys.path
-sys.path.append(os.path.join(os.environ['AIRFLOW_HOME'], 'include'))
+sys.path.append(str(Path(__file__).parent.parent / "include"))
 
 from weather_utils import fetch_and_save
 
@@ -48,10 +48,10 @@ def extract_weather_data():
     except Exception:
         # Fallback for when connection is not defined yet (first run)
         # Using the service name 'postgres' from docker-compose network
-        db_url = "postgresql://user:password@postgres:5432/weather_db"
-    
+        db_url = "postgresql://airflow:airflow@postgres:5432/weather_db"
+
     engine = create_engine(db_url)
-    
+
     output_dir = Path("/tmp/csvs") # Use tmp in Airflow worker
     if output_dir.exists():
         # Cleanup old run
@@ -64,8 +64,12 @@ def extract_weather_data():
         async with httpx.AsyncClient() as client:
             tasks = []
             for city, (lat, lon) in CITIES.items():
-                tasks.append(fetch_and_save(client, city, lat, lon, semaphore, output_dir, engine))
-            
+                tasks.append(
+                    fetch_and_save(
+                        client, city, lat, lon, semaphore, output_dir, engine
+                    )
+                )
+
             await asyncio.gather(*tasks)
 
     asyncio.run(main_loop())
@@ -73,10 +77,14 @@ def extract_weather_data():
 
 with DAG(
     dag_id="weather_elt",
-    start_date=days_ago(1),
-    schedule_interval="@daily",
+    start_date=datetime(2025, 1, 1),
+    schedule="@daily",
     catchup=False,
     tags=["example", "weather"],
+    default_args={
+        "retries": 2,
+        "retry_delay": timedelta(minutes=5),
+    },
 ) as dag:
-    
+
     extract_weather_data()
