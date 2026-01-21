@@ -1,3 +1,4 @@
+# No sensitive credentials since this project is an example
 my_dbt_project:
   outputs:
     dev:

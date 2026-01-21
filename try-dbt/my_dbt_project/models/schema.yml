@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: customer_with_orders
+    description: "Enriched customer data with order summary"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: number_of_orders
+        description: "Total count of orders"
+        data_tests:
+          - not_null
