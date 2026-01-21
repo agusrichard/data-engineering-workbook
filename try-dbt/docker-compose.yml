@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: dbt_postgres_local
+    environment:
+      POSTGRES_USER: dbt_user
+      POSTGRES_PASSWORD: dbt_password
+      POSTGRES_DB: dbt_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: pgweb_local
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgres://dbt_user:dbt_password@postgres:5432/dbt_db?sslmode=disable
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
