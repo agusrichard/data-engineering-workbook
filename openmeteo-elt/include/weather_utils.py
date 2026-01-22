@@ -115,6 +115,8 @@ async def fetch_and_save(
     semaphore: asyncio.Semaphore,
     output_dir: Path,
     db_engine,
+    start_date: str = None,
+    end_date: str = None,
 ):
-    data = await fetch_weather(client, city, lat, lon, semaphore)
+    data = await fetch_weather(client, city, lat, lon, semaphore, start_date, end_date)
     transform_to_dataframe(data, output_dir, db_engine)

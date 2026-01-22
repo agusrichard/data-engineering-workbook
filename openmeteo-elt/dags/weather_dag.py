@@ -8,6 +8,7 @@ from airflow import DAG
 from airflow.decorators import task
 from airflow.hooks.base import BaseHook
 from sqlalchemy import create_engine
+from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig
 
 # Add include directory to sys.path
 sys.path.append(str(Path(__file__).parent.parent / "include"))
@@ -39,7 +40,7 @@ CITIES = {
 }
 
 @task
-def extract_weather_data():
+def extract_weather_data(logical_date=None):
     # Setup database connection
     # Try to get connection from Airflow, fallback to default for local dev
     try:
@@ -59,6 +60,11 @@ def extract_weather_data():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Use logical_date to fetch data for that specific day
+    # Airflow 3.x logical_date is a pendulum object
+    execution_date_str = logical_date.to_date_string()
+    print(f"Fetching weather data for: {execution_date_str}")
+
     async def main_loop():
         semaphore = asyncio.Semaphore(5)
         async with httpx.AsyncClient() as client:
@@ -66,7 +72,9 @@ def extract_weather_data():
             for city, (lat, lon) in CITIES.items():
                 tasks.append(
                     fetch_and_save(
-                        client, city, lat, lon, semaphore, output_dir, engine
+                        client, city, lat, lon, semaphore, output_dir, engine,
+                        start_date=execution_date_str,
+                        end_date=execution_date_str
                     )
                 )
 
@@ -74,6 +82,7 @@ def extract_weather_data():
 
     asyncio.run(main_loop())
     print(f"Data saved to {output_dir}")
+
 
 with DAG(
     dag_id="weather_elt",
@@ -87,4 +96,21 @@ with DAG(
     },
 ) as dag:
 
-    extract_weather_data()
+    # Define dbt config
+    dbt_project_path = Path("/opt/airflow/dbt")
+    profile_config = ProfileConfig(
+        profile_name="weather_elt",
+        target_name="dev",
+        profiles_yml_filepath=dbt_project_path / "profiles.yml"
+    )
+
+    transform_weather_data = DbtTaskGroup(
+        group_id="transform_weather_data",
+        project_config=ProjectConfig(dbt_project_path),
+        profile_config=profile_config,
+        execution_config=ExecutionConfig(
+            dbt_executable_path="dbt",
+        ),
+    )
+
+    extract_weather_data() >> transform_weather_data
