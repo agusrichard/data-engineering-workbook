@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: avg_temperature_per_city
+    description: "Average temperature calculated per city."
+    columns:
+      - name: city
+        description: "The name of the city."
+        tests:
+          - unique
+          - not_null
+      - name: avg_temperature
+        description: "The average temperature for the city."
+        tests:
+          - not_null
