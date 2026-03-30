@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from airflow.sdk import DAG, task
-from airflow.providers.standard.operators.python import ShortCircuitOperator
+from airflow.operators.python import ShortCircuitOperator
 
 
 def is_weekday(**context):
